@@ -21,7 +21,7 @@
 				<configuration>
 					<header>license-header.txt</header>
 					<properties>
-						<license.years>2020</license.years>
+						<license.years>2020-2021</license.years>
 					</properties>
 					<includes>
 						<include>src/*/java/**/*.java</include>

@@ -68,12 +68,23 @@ public class FileSystemWatcher implements Runnable {
      * @param name the name of the file system watcher (used as part of the watch service thread name)
      */
     public FileSystemWatcher(final String name) {
+    	this(name, /*daemon*/ false);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param name the name of the file system watcher (used as part of the watch service thread name)
+     * @param daemon flag indicating if the underlying file system watcher thread should be a daemon thread
+     */
+    public FileSystemWatcher(final String name, boolean daemon) {
         try {
             watchService = FileSystems.getDefault().newWatchService();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         watchThread = new Thread(this, "file-system-watcher[" + name + "]"); //$NON-NLS-1$ //$NON-NLS-2$
+        watchThread.setDaemon(daemon);
         watchThread.start();
     }
 

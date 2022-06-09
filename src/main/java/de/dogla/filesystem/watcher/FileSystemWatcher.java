@@ -139,7 +139,10 @@ public class FileSystemWatcher implements Runnable {
 		final Set<File> deletedFiles = new HashSet<>();
 		FileSystemConfig config = pathData.config;
 		for (WatchEvent<?> event : events) {
-		    Path eventPath = (Path) event.context();
+			if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
+				continue;
+			}
+			Path eventPath = (Path) event.context();
 			Path targetPath = watchablePath.resolve(eventPath);
 			File targetFile = targetPath.toFile();
 			//System.err.println(" - " + targetFile.getAbsolutePath());
@@ -170,9 +173,6 @@ public class FileSystemWatcher implements Runnable {
 		        	continue;
 		        }
 		        deletedFiles.add(targetFile);
-		    } else if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
-		    	logger.warn("Overflow detected: {}", targetFile); //$NON-NLS-1$
-		    	continue;
 		    }
 		    if (targetFile.isDirectory() && FileSystemEventType.ADDED == type) {
 		    	int depth = config.getMaxDepth() - currentDepth;

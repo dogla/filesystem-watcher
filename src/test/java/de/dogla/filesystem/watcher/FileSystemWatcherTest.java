@@ -155,6 +155,60 @@ public class FileSystemWatcherTest {
 			assertEquals("ADDED: C:\\resources\\watchPath\\sample.txt", log.stream().collect(Collectors.joining("\n")));
 		}
 	}
+	
+	/**
+	 * This method tests file modification of multiple files in the same directory. All other events should be ignored.
+	 * @throws Exception
+	 */
+	@Test
+	public void test_watch_multiple_file() throws Exception {
+		List<String> log = new ArrayList<>();
+		try {
+			File file = new File("C:\\resources\\watchPath\\sample.txt");
+			file.delete();
+			File file2 = new File("C:\\resources\\watchPath\\sample2.txt");
+			file2.delete();
+			File file3 = new File("C:\\resources\\watchPath\\sample3.txt");
+			file3.delete();
+			
+			FileSystemListener simpleListener = simpleListener(log);
+			FileSystemListener simpleListener3 = simpleListener(log);
+			
+			fsWatcher.watchPath(file, simpleListener);
+			fsWatcher.watchPath(file3, simpleListener3);
+			
+			createTempFile(file.getParentFile(), "sample.txt");
+			createTempFile(file.getParentFile(), "sample2.txt");
+			createTempFile(file.getParentFile(), "sample3.txt");
+			sleep(1000);
+			
+			writeStringToFile(file, "mydata", "UTF-8");
+			writeStringToFile(file2, "mydata2", "UTF-8");
+			writeStringToFile(file3, "mydata3", "UTF-8");
+			sleep(1000);
+			
+			fsWatcher.unwatchPath(file, simpleListener);
+
+			writeStringToFile(file, "mydata", "UTF-8");
+			writeStringToFile(file2, "mydata2", "UTF-8");
+			writeStringToFile(file3, "mydata3", "UTF-8");
+			sleep(1000);
+			
+			fsWatcher.unwatchPath(file3, simpleListener3);
+			
+			writeStringToFile(file, "mydata", "UTF-8");
+			writeStringToFile(file2, "mydata2", "UTF-8");
+			writeStringToFile(file3, "mydata3", "UTF-8");
+		} finally {
+			sleep(1000);
+			unwatchPaths();
+			assertEquals("ADDED: C:\\resources\\watchPath\\sample.txt\n"
+					+ "ADDED: C:\\resources\\watchPath\\sample3.txt\n"
+					+ "MODIFIED: C:\\resources\\watchPath\\sample.txt\n"
+					+ "MODIFIED: C:\\resources\\watchPath\\sample3.txt\n"
+					+ "MODIFIED: C:\\resources\\watchPath\\sample3.txt", log.stream().collect(Collectors.joining("\n")));
+		}
+	}	
 
 	/**
 	 * This method tests file modification in the registered folder.

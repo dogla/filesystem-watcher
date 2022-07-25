@@ -57,7 +57,7 @@ public class FileSystemWatcher implements Runnable {
 	
     private WatchService watchService;
     private final Map<File, WatchKeyData> dataByFile = Collections.synchronizedMap(new HashMap<File, WatchKeyData>());
-    private final Map<WatchKey, WatchKeyData> dataByKey = Collections.synchronizedMap(new IdentityHashMap<WatchKey, WatchKeyData>());
+    private final Map<WatchKey, List<WatchKeyData>> datesByKey = Collections.synchronizedMap(new IdentityHashMap<WatchKey, List<WatchKeyData>>());
 
     private volatile boolean stopped = false;
     private final Thread watchThread;
@@ -103,9 +103,12 @@ public class FileSystemWatcher implements Runnable {
                 	Path watchablePath = (Path) key.watchable();
                     try {
                     	//System.err.println("take() returned");
-                        WatchKeyData pathData = dataByKey.get(key);
-                        if (pathData != null) {
-                            handleEvents(watchablePath, pathData, key.pollEvents());
+                    	List<WatchEvent<?>> events = key.pollEvents();
+                        List<WatchKeyData> pathDates = datesByKey.get(key);
+                        if (pathDates != null) {
+                        	for (WatchKeyData pathData : pathDates) {
+								handleEvents(watchablePath, pathData, events);
+							}
                         }
                     } finally {
                         //if the key is no longer valid remove it from the files list
@@ -139,6 +142,7 @@ public class FileSystemWatcher implements Runnable {
 		final Set<File> deletedFiles = new HashSet<>();
 		FileSystemConfig config = pathData.config;
 		for (WatchEvent<?> event : events) {
+			//System.err.println("\t" + event.context() + " | " + pathData.path);
 			if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
 				continue;
 			}
@@ -335,7 +339,7 @@ public class FileSystemWatcher implements Runnable {
     private void addWatchedDirectory(WatchKeyData data, File dir) throws IOException {
         Path path = Paths.get(dir.toURI());
         WatchKey key = path.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-        dataByKey.put(key, data);
+        datesByKey.computeIfAbsent(key, k -> new ArrayList<>()).add(data);
         data.keys.add(key);
     }
 
@@ -352,9 +356,15 @@ public class FileSystemWatcher implements Runnable {
             if (data.listeners.isEmpty()) {
                 dataByFile.remove(file);
                 for (WatchKey key : data.keys) {
-                	key.reset();
-                    key.cancel();
-                    dataByKey.remove(key);
+                    List<WatchKeyData> list = datesByKey.get(key);
+                    if (list != null) {
+						list.remove(data);
+						if (list.isEmpty()) {
+		                	key.reset();
+		                    key.cancel();
+							datesByKey.remove(key);
+						}
+					}
                 }
             }
         }
@@ -366,12 +376,14 @@ public class FileSystemWatcher implements Runnable {
 	public synchronized void unwatchPaths() {
 		//System.err.println("FileSystemWatcher.unwatchPaths()");
 		dataByFile.clear();
-		for (WatchKeyData value : dataByKey.values()) {
-			for (WatchKey key : value.keys) {
-				key.cancel();
+		for (List<WatchKeyData> values : datesByKey.values()) {
+			for (WatchKeyData watchKeyData : values) {
+				for (WatchKey key : watchKeyData.keys) {
+					key.cancel();
+				}
 			}
 		}
-		dataByKey.clear();
+		datesByKey.clear();
 		//System.err.println("FileSystemWatcher.unwatchPaths() - end");
 	}
 

@@ -1,4 +1,8 @@
+
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.dogla/filesystem-watcher.svg?label=Maven%20Central)](https://search.maven.org/artifact/io.github.dogla/filesystem-watcher)
+
 # filesystem-watcher
+
 Abstraction layer around `java.nio.file.WatchService` that provides a more programmer friendly API to watch file system events.
 
 # Dependencies
@@ -8,33 +12,20 @@ Abstraction layer around `java.nio.file.WatchService` that provides a more progr
 
 # Setup
 
-Until now this library is not added to maven central. To use this library you have to build it on your own and install it to your local maven repo.
-So a simple clone and build is all you need.
+To use this library you can use the corresponding maven dependency:
 
-```
-git clone https://github.com/dogla/filesystem-watcher.git
-cd filesystem-watcher
-mvnw clean install -DskipTests
-```
-
-After that you can use the library via a maven dependency:
 ```xml
     <dependency>
-		<groupId>io.github.dogla</groupId>
-		<artifactId>filesystem-watcher</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+        <groupId>io.github.dogla</groupId>
+        <artifactId>filesystem-watcher</artifactId>
+        <version>1.0.0</version>
     <dependency>
-```
-
-If the snapshot version bothers you, you can also remove the snapshot and reinstall it again.
-```
-mvnw versions:set -DnewVersion=1.0.0
-mvnw clean install -DskipTests
 ```
 
 # Usage
 
 ## Watch files
+
 This sample creates a file system watcher and registers for the file `C:\myapp\config.json` a listener that will be called if the file is created, modified or deleted.
 
 ```java
@@ -55,6 +46,7 @@ fsWatcher.watchPath(new File("C:\\myapp\\config.json"), (event) -> {
 ```
 
 If you are only interested in special event types you could provide a `FileSystemConfig` with the appropriate types.
+
 ```java
 FileSystemWatcher fsWatcher = new FileSystemWatcher("my-filesystem-watcher");
 FileSystemConfig config = new FileSystemConfig().withAllowedEventTypes(FileSystemEventType.MODIFIED);
@@ -64,6 +56,7 @@ fsWatcher.watchPath(new File("C:\\myapp\\config.json"), (event) -> {
 ```
 
 # Watch directories
+
 This sample creates a file system watcher and registers for the directory `C:\myapp\` a listener that will be called if the directory is created, modified or deleted or any of the direct subdirectories or subfiles will be created, modified or deleted.
 
 ```java

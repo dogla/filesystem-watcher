@@ -25,7 +25,7 @@
 	
 	<scm>
 		<connection>scm:git:git://github.com/dogla/filesystem-watcher.git</connection>
-		<developerConnection>scm:git:ssh://github.com:dogla/filesystem-watcher.git</developerConnection>
+		<developerConnection>scm:git:git://github.com/dogla/filesystem-watcher.git</developerConnection>
 		<url>http://github.com/dogla/filesystem-watcher/tree/master</url>
 	</scm>
 	

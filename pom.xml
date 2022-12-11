@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.dogla</groupId>
 	<artifactId>filesystem-watcher</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.0.1-SNAPSHOT</version>
 
 	<name>Filesystem Watcher</name>
 	<description>Abstraction layer around `java.nio.file.WatchService` that provides a more programmer friendly API to watch file system events.</description>
@@ -136,18 +136,6 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
-			
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-release-plugin</artifactId>
-				<version>2.5.3</version>
-				<configuration>
-					<autoVersionSubmodules>true</autoVersionSubmodules>
-					<useReleaseProfile>false</useReleaseProfile>
-					<releaseProfiles>release</releaseProfiles>
-					<goals>deploy nexus-staging:release</goals>
-				</configuration>
 			</plugin>
 		</plugins>
 		<pluginManagement>

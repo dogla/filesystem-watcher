@@ -20,7 +20,7 @@ mvnw clean install -DskipTests
 After that you can use the library via a maven dependency:
 ```xml
     <dependency>
-		<groupId>de.dogla</groupId>
+		<groupId>io.github.dogla</groupId>
 		<artifactId>filesystem-watcher</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
     <dependency>

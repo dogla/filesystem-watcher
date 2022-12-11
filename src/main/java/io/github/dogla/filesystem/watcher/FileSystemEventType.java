@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2020-2021 Dominik Glaser
+ * Copyright (C) 2020-2022 Dominik Glaser
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.dogla.filesystem.watcher;
+package io.github.dogla.filesystem.watcher;
 
 /**
  * The different file system event types.

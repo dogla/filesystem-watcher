@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- OVERFLOW events (the OS dropped changes) were silently swallowed. They are now logged and
+  surfaced as a MODIFIED event for the watched path, giving consumers a chance to rescan.
+
 - Invalid watch keys (watched directory deleted) were cleaned up against the wrong map entry -
   re-watching the same file after the directory was recreated silently reused the dead
   registration and never delivered events again.

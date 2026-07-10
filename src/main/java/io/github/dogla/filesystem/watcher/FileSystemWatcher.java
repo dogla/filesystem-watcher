@@ -165,6 +165,13 @@ public class FileSystemWatcher implements Runnable {
 		for (WatchEvent<?> event : events) {
 			//System.err.println("\t" + event.context() + " | " + pathData.path);
 			if (event.kind() == StandardWatchEventKinds.OVERFLOW) {
+				// the OS dropped events - surface it as a MODIFIED of the watched path so
+				// consumers get a chance to rescan (silently swallowing it means missed changes)
+				logger.warn("Watch event overflow for {} - some events were lost", pathData.path); //$NON-NLS-1$
+				if (config.isEventAllowed(FileSystemEventType.MODIFIED)) {
+					FileSystemEvent overflowEvent = new FileSystemEvent(pathData.path.toFile(), FileSystemEventType.MODIFIED);
+					results.add(overflowEvent);
+				}
 				continue;
 			}
 			Path eventPath = (Path) event.context();

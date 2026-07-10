@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Listener notification could overtake itself: every batch was dispatched on a NEW thread, so a
+  slow listener in batch 1 saw batch 2 first. Batches are now delivered by a single dispatcher
+  thread in order.
+
 - Single-file watches also fired for sibling files whose name merely starts with the watched
   name (`test.js` matched `test.js.tmp.12345` - the temp files of atomic writers), and directory
   watches matched same-prefix sibling directories (`dir` vs `dir2`). The path check is now

@@ -61,6 +61,9 @@ public class FileSystemWatcher implements Runnable {
 
     private volatile boolean stopped = false;
     private final Thread watchThread;
+    /** Single dispatcher: listeners must receive the batches in order (a thread per batch let a
+     * later batch overtake a slow listener). */
+    private final java.util.concurrent.ExecutorService dispatcher;
 
     /**
      * Constructor.
@@ -83,6 +86,11 @@ public class FileSystemWatcher implements Runnable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        dispatcher = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        	Thread t = new Thread(r, "file-system-watcher-dispatch[" + name + "]"); //$NON-NLS-1$ //$NON-NLS-2$
+        	t.setDaemon(daemon);
+        	return t;
+        });
         watchThread = new Thread(this, "file-system-watcher[" + name + "]"); //$NON-NLS-1$ //$NON-NLS-2$
         watchThread.setDaemon(daemon);
         watchThread.start();
@@ -264,8 +272,8 @@ public class FileSystemWatcher implements Runnable {
 
 		if (!results.isEmpty()) {
 			try {
-				// handle the events in another thread 
-				Thread t = new Thread(() -> {
+				// handle the events off the watch thread but IN ORDER (single dispatcher)
+				dispatcher.execute(() -> {
 					for (FileSystemEvent event : results) {
 						FileSystemListener[] listeners = pathData.listeners.toArray(new FileSystemListener[pathData.listeners.size()]);
 						for (FileSystemListener listener : listeners) {
@@ -277,8 +285,6 @@ public class FileSystemWatcher implements Runnable {
 						}
 				    }
 				});
-				t.setUncaughtExceptionHandler((thread, e) -> logger.error("Uncaught exception detected: {}", e.getMessage(), e)); //$NON-NLS-1$
-				t.start();
 			} catch (Exception e) {
 				logger.error(e.getMessage(), e);
 			}
@@ -400,6 +406,7 @@ public class FileSystemWatcher implements Runnable {
      */
     public void close() {
         this.stopped = true;
+        dispatcher.shutdown();
         watchThread.interrupt();
         try {
             if (watchService != null) {

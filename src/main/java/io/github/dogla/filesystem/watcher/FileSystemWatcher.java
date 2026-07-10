@@ -208,35 +208,41 @@ public class FileSystemWatcher implements Runnable {
 		    }
 		}
 
-		// filter duplicate events
-		// e.g. if the file is modified after creation we only want to show the create event
+		// coalesce duplicate events within one batch
+		// e.g. if the file is modified right after creation we only report the ADDED event.
+		// A file that is BOTH added and removed in the same batch is either a transient temp file
+		// (create -> delete: nets to nothing) or an ATOMIC REPLACEMENT (delete -> rename-in, the
+		// write pattern of modern editors and e.g. Claude Code). A replacement leaves the file
+		// existing and MUST surface as a change - Windows delivers no accompanying MODIFY for the
+		// rename, so we synthesize a single MODIFIED event in that case (the old behaviour dropped
+		// ADDED and REMOVED against each other and the replacement was invisible to listeners).
 		{
+			Set<File> replacedFiles = new HashSet<>(addedFiles);
+			replacedFiles.retainAll(deletedFiles);
+			Set<File> modifiedFiles = new HashSet<>();
+			for (FileSystemEvent event : results) {
+				if (event.getType() == FileSystemEventType.MODIFIED) {
+					modifiedFiles.add(event.getFile());
+				}
+			}
 			Iterator<FileSystemEvent> it = results.iterator();
 			while (it.hasNext()) {
 				FileSystemEvent event = it.next();
-				if (event.getType() == FileSystemEventType.MODIFIED) {
-					if (addedFiles.contains(event.getFile()) &&
-							deletedFiles.contains(event.getFile())) {
-						// XNIO-344
-						// All file change events (ADDED, REMOVED and MODIFIED) occurred here.
-						// This happens when an updated file is moved from the different
-						// filesystems or the directory having different project quota on Linux.
-						// ADDED and REMOVED events will be removed in the latter conditional branching.
-						// So, this MODIFIED event needs to be kept for the file change notification.
-						continue;
-					}
-					if (addedFiles.contains(event.getFile()) ||
-							deletedFiles.contains(event.getFile())) {
+				File file = event.getFile();
+				if (replacedFiles.contains(file)) {
+					// keep only MODIFIED for added+removed files (XNIO-344); ADDED/REMOVED cancel out
+					if (event.getType() != FileSystemEventType.MODIFIED) {
 						it.remove();
 					}
-				} else if (event.getType() == FileSystemEventType.ADDED) {
-					if (deletedFiles.contains(event.getFile())) {
-						it.remove();
-					}
-				} else if (event.getType() == FileSystemEventType.REMOVED) {
-					if (addedFiles.contains(event.getFile())) {
-						it.remove();
-					}
+				} else if (event.getType() == FileSystemEventType.MODIFIED
+						&& (addedFiles.contains(file) || deletedFiles.contains(file))) {
+					it.remove();
+				}
+			}
+			for (File file : replacedFiles) {
+				if (!modifiedFiles.contains(file) && file.exists()) {
+					// delete+create without a modify in the same batch = atomic replacement
+					results.add(new FileSystemEvent(file, FileSystemEventType.MODIFIED));
 				}
 			}
 		}
@@ -402,10 +408,10 @@ public class FileSystemWatcher implements Runnable {
         }
     }
 
-    private class WatchKeyData {
+    class WatchKeyData {
         private final Path path;
         private final FileSystemConfig config;
-        private final List<FileSystemListener> listeners = new ArrayList<>();
+        final List<FileSystemListener> listeners = new ArrayList<>();
         private final List<WatchKey> keys = new ArrayList<>();
 		public WatchKeyData(Path path, FileSystemConfig config) {
 			this.path = path;

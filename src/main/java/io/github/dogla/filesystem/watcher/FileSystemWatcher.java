@@ -150,8 +150,10 @@ public class FileSystemWatcher implements Runnable {
 			Path targetPath = watchablePath.resolve(eventPath);
 			File targetFile = targetPath.toFile();
 			//System.err.println(" - " + targetFile.getAbsolutePath());
-			// check if changed file starts with the same path (needed for single file watching)
-			if (!targetFile.getAbsolutePath().contains(pathData.path.toFile().getAbsolutePath())) {
+			// check if the changed path IS the watched path or lies below it (needed for single
+			// file watching) - component-wise, so a sibling that merely starts with the same
+			// name (test.js vs. test.js.tmp.12345, dir vs. dir2) does not match
+			if (!targetPath.startsWith(pathData.path)) {
 				continue;
 			}
 			// check config

@@ -119,9 +119,22 @@ public class FileSystemWatcher implements Runnable {
 							}
                         }
                     } finally {
-                        //if the key is no longer valid remove it from the files list
+                        // an invalid key means its directory is gone: drop the key everywhere so a
+                        // later watchPath on the same path registers freshly (the old code removed
+                        // the wrong dataByFile entry - single-file watches are keyed by the FILE,
+                        // not the directory - and left dead registrations behind)
                         if (!key.reset()) {
-                            dataByFile.remove(watchablePath.toFile());
+                            List<WatchKeyData> invalidated = datesByKey.remove(key);
+                            if (invalidated != null) {
+                                for (WatchKeyData data : invalidated) {
+                                    data.keys.remove(key);
+                                    if (data.keys.isEmpty()) {
+                                        synchronized (dataByFile) {
+                                            dataByFile.values().removeIf(value -> value == data);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

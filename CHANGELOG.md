@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Invalid watch keys (watched directory deleted) were cleaned up against the wrong map entry -
+  re-watching the same file after the directory was recreated silently reused the dead
+  registration and never delivered events again.
+
 - Listener notification could overtake itself: every batch was dispatched on a NEW thread, so a
   slow listener in batch 1 saw batch 2 first. Batches are now delivered by a single dispatcher
   thread in order.

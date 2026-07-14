@@ -440,7 +440,8 @@ public class FileSystemWatcher implements Runnable {
     class WatchKeyData {
         private final Path path;
         private final FileSystemConfig config;
-        final List<FileSystemListener> listeners = new ArrayList<>();
+        // thread-safe: mutated by watch/unwatch while the dispatcher thread snapshots it
+        final List<FileSystemListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
         private final List<WatchKey> keys = new ArrayList<>();
 		public WatchKeyData(Path path, FileSystemConfig config) {
 			this.path = path;

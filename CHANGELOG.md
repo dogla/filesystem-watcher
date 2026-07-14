@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- The listener list is now thread-safe (`CopyOnWriteArrayList`) - it is mutated by
+  `watchPath`/`unwatchPath` while the dispatcher thread snapshots it for delivery.
+
 - OVERFLOW events (the OS dropped changes) were silently swallowed. They are now logged and
   surfaced as a MODIFIED event for the watched path, giving consumers a chance to rescan.
 

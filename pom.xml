@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.github.dogla</groupId>
 	<artifactId>filesystem-watcher</artifactId>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.0.1</version>
 
 	<name>Filesystem Watcher</name>
 	<description>Abstraction layer around `java.nio.file.WatchService` that provides a more programmer friendly API to watch file system events.</description>

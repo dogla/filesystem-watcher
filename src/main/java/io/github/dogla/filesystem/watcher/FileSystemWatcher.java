@@ -145,6 +145,10 @@ public class FileSystemWatcher implements Runnable {
                 // the watcher service is closed, so no more waiting on events
             	//System.err.println("ClosedWatchServiceException");
                 break;
+            } catch (RuntimeException e) {
+                // an escaping exception would end this thread silently (only System.err) and no
+                // event would ever be delivered again - log it and keep watching
+                logger.error("Error while handling watch events", e); //$NON-NLS-1$
             }
         }
     }
@@ -373,7 +377,9 @@ public class FileSystemWatcher implements Runnable {
     private void addWatchedDirectory(WatchKeyData data, File dir) throws IOException {
         Path path = Paths.get(dir.toURI());
         WatchKey key = path.register(watchService, ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY);
-        datesByKey.computeIfAbsent(key, k -> new ArrayList<>()).add(data);
+        // thread-safe: watchPath/unwatchPath (e.g. from a listener on the dispatcher thread) mutate
+        // the list while the watch thread iterates it
+        datesByKey.computeIfAbsent(key, k -> new java.util.concurrent.CopyOnWriteArrayList<>()).add(data);
         data.keys.add(key);
     }
 
@@ -442,7 +448,8 @@ public class FileSystemWatcher implements Runnable {
         private final FileSystemConfig config;
         // thread-safe: mutated by watch/unwatch while the dispatcher thread snapshots it
         final List<FileSystemListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
-        private final List<WatchKey> keys = new ArrayList<>();
+        // thread-safe: grows on the watch thread (new sub directories) while unwatchPath iterates it
+        private final List<WatchKey> keys = new java.util.concurrent.CopyOnWriteArrayList<>();
 		public WatchKeyData(Path path, FileSystemConfig config) {
 			this.path = path;
 			this.config = config;

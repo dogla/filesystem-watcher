@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- The watch thread could die silently: a listener that re-registers its file
+  (`unwatchPath` + `watchPath`, e.g. a reload on change) mutated the registration list of a
+  watch key while the watch thread iterated it. The `ConcurrentModificationException` ended the
+  thread (reported only on `System.err`) and no event was delivered ever again. The lists are
+  now thread-safe, and any other exception in the watch loop is logged instead of ending it.
+
 ## [1.0.1] - 2026-07-14
 
 ### Fixed
